@@ -4,7 +4,7 @@ This repo is a fork from https://github.com/elastic/dockerfiles that modifies th
 
 The [elasticsearch-docker-arm64 repo](https://github.com/hsxsix/elasticsearch-docker-arm64) was used as a guide for making the neccesary changes.
 
-[Since the Xpack Machine Learning feature does not support ARM](https://issues.apache.org/jira/browse/FLINK-14126), we reccomend setting an `XPACK_ML_ENABLED: "false"` environment variable on your container.
+[Note that since the Xpack Machine Learning feature does not support ARM](https://issues.apache.org/jira/browse/FLINK-14126), it has been disabled in the included `elasticsearch.yml`.
 
 ## Multi-archetiecture builds
 
