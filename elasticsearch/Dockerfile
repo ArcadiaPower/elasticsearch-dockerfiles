@@ -14,16 +14,21 @@
 FROM centos:7 AS builder
 
 ENV PATH /usr/share/elasticsearch/bin:$PATH
-ENV JAVA_HOME /opt/jdk-15.0.1+9
+ENV JAVA_HOME /opt/jdk-15+36
 
-RUN for iter in {1..10}; do curl -L -s -S https://github.com/AdoptOpenJDK/openjdk15-binaries/releases/download/jdk-15.0.1%2B9/OpenJDK15U-jdk_x64_linux_hotspot_15.0.1_9.tar.gz | tar -C /opt -zx && \
-    exit_code=0 && break || exit_code=\$? && echo "download error: retry $iter in 10s" && sleep 10; done; \
+RUN ARCH= && case $(arch) in \
+    x86_64) ARCH='x64';; \
+    aarch64) ARCH='aarch64';; \
+    *) echo "unsupported architecture - $(arch)"; exit 1 ;; \
+  esac && \
+  for iter in {1..10}; do curl -L -s -S https://github.com/AdoptOpenJDK/openjdk15-binaries/releases/download/jdk-15%2B36_openj9-0.23.0-m2/OpenJDK15U-jdk_${ARCH}_linux_openj9_15_36_openj9-0.23.0-m2.tar.gz | tar -C /opt -zx && \
+    exit_code=0 && break || exit_code=\$? && echo "download error: ${ARCH} retry $iter in 10s" && sleep 10; done; \
     (exit $exit_code)
  
 # Replace OpenJDK's built-in CA certificate keystore with the one from the OS
 # vendor. The latter is superior in several ways.
 # REF: https://github.com/elastic/elasticsearch-docker/issues/171
-RUN ln -sf /etc/pki/ca-trust/extracted/java/cacerts /opt/jdk-15.0.1+9/lib/security/cacerts
+RUN ln -sf /etc/pki/ca-trust/extracted/java/cacerts ${JAVA_HOME}/lib/security/cacerts
 
 RUN yum install -y unzip which
 
@@ -47,22 +52,24 @@ COPY config/elasticsearch.yml config/log4j2.properties config/
 # Add entrypoint
 ################################################################################
 
-FROM centos:7
+FROM debian:stable-slim
 
 ENV ELASTIC_CONTAINER true
-ENV JAVA_HOME /opt/jdk-15.0.1+9
+ENV JAVA_HOME /opt/jdk-15+36
 
-COPY --from=builder /opt/jdk-15.0.1+9 /opt/jdk-15.0.1+9
+COPY --from=builder /opt/jdk-15+36 /opt/jdk-15+36
 
-RUN for iter in {1..10}; do yum update  --setopt=tsflags=nodocs -y && \
-    yum install -y  --setopt=tsflags=nodocs nc unzip wget which && \
-    yum clean all && exit_code=0 && break || exit_code=\$? && echo "yum error: retry $iter in 10s" && sleep 10; done; \
-    (exit $exit_code)
-
-RUN groupadd -g 1000 elasticsearch && \
-    adduser -u 1000 -g 1000 -G 0 -d /usr/share/elasticsearch elasticsearch && \
-    chmod 0775 /usr/share/elasticsearch && \
-    chgrp 0 /usr/share/elasticsearch
+RUN for iter in {1..10}; \
+    do \
+		  apt update  -y && apt install -y  netcat \
+		  && apt autoremove -y && apt clean && exit_code=0 \
+		  && break || exit_code=$? \
+		  && echo "apt error: retry $iter in 10s" \
+		  && sleep 10; \
+		done;\
+		(exit $exit_code) \
+		&& groupadd -g 1000 elasticsearch && useradd -u 1000 -g 1000 -G 0 -m -d /usr/share/elasticsearch elasticsearch \
+		&& chmod 0775 /usr/share/elasticsearch && chgrp 0 /usr/share/elasticsearch
 
 WORKDIR /usr/share/elasticsearch
 COPY --from=builder --chown=1000:0 /usr/share/elasticsearch /usr/share/elasticsearch

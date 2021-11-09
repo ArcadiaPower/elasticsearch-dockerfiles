@@ -1,62 +1,15 @@
 # Dockerfiles
 
-## About this Repository
+This repo is a fork from https://github.com/elastic/dockerfiles that modifies the Elasticsearch 6.8 Dockerfile to provide multiarchitecture support for the amd64 and arch64 platforms. [See this branch comparison for all the changes](https://github.com/ArcadiaPower/elasticsearch-dockerfiles/compare/6.8...6.8-arm-compatible).
 
-This repo is used to store the Dockerfiles which can be used to build Docker images 
-for each product released in the stack. Those Dockerfiles were generated from the 
-products' own repositories for which you can get the links in the sections below. 
-Please note that **issues are disabled on this repo** and that all issues and PRs 
-must be filed in the products' repositories.
+The [elasticsearch-docker-arm64 repo](https://github.com/hsxsix/elasticsearch-docker-arm64) was used as a guide for making the neccesary changes.
 
-## Elasticsearch
+[Since the Xpack Machine Learning feature does not support ARM](https://issues.apache.org/jira/browse/FLINK-14126), we reccomend setting an `XPACK_ML_ENABLED: "false"` environment variable on your container.
 
-**Elasticsearch** is a distributed, RESTful search and analytics engine capable of
-solving a growing number of use cases. As the heart of the Elastic Stack, it
-centrally stores your data so you can discover the expected and uncover the
-unexpected.
+## Multi-archetiecture builds
 
-For more information about Elasticsearch, please visit
-https://www.elastic.co/products/elasticsearch.
-
-### Where to file issues and PRs
-
-- [Issues](https://github.com/elastic/elasticsearch/issues)
-- [PRs](https://github.com/elastic/elasticsearch/pulls)
-
-### Where to get help
-
-- [Elasticsearch Discuss Forums](https://discuss.elastic.co/c/elasticsearch) 
-- [Elasticsearch Documentation](https://www.elastic.co/guide/en/elasticsearch/reference/master/index.html)
-
-## Kibana
-
-**Kibana** lets you visualize your Elasticsearch data and navigate the Elastic Stack, 
-so you can do anything from learning why you're getting paged at 2:00 a.m. to 
-understanding the impact rain might have on your quarterly numbers.
-
-For more information about Kibana, please visit
-https://www.elastic.co/products/kibana.
-
-### Where to file issues and PRs
-
-- [Issues](https://github.com/elastic/kibana/issues)
-- [PRs](https://github.com/elastic/kibana/pulls)
-
-
-### Where to get help
-
-- [Kibana Discuss Forums](https://discuss.elastic.co/c/kibana) 
-- [Kibana Documentation](https://www.elastic.co/guide/en/kibana/current/index.html)
-
-## Still need help?
-
-You can learn more about the Elastic Community and also understand how to get more help 
-visiting [Elastic Community](https://www.elastic.co/community).
-
-
-This software is governed by their applicable licenses,
-and includes the full set of [free
-features](https://www.elastic.co/subscriptions).
-
-View the detailed release notes
-[here](https://www.elastic.co/guide/en/elasticsearch/reference/6.8/es-release-notes.html).
+```
+docker buildx create --name amd-arm-builder
+docker buildx use amd-arm-builder
+docker buildx build --platform linux/amd64,linux/arm64 --tag YOUR_TAG --push .
+```
